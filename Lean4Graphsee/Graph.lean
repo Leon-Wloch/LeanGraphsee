@@ -37,9 +37,20 @@ def findAllRelations (lctx : LocalContext) : MetaM (Array RelationInfo) := do
 def findAllWorlds (lctx : LocalContext) (relations : Array RelationInfo) : MetaM (Std.HashSet String) := do
   let mut worlds : Std.HashSet String := {}
   for info in relations do
+  -- TODO: this for-loop is very similar to the one from extracEdgesFromRelation.
+  -- Possibly extract all instances of relations first and pass them to both functions?
     for decl in lctx do
-      if ← isDefEq decl.type info.worldType then
-        worlds := worlds.insert decl.userName.toString
+      match decl.type with
+      | .app (.app r w1) w2 =>
+        if ← isDefEq r info.relation then
+          let w1Type ← inferType w1
+          let w2Type ← inferType w2
+          if (← isDefEq w1Type info.worldType) && (← isDefEq w2Type info.worldType) then
+            let w1str := toString (← ppExpr w1)
+            let w2str := toString (← ppExpr w2)
+            worlds := worlds.insert w1str
+            worlds := worlds.insert w2str
+      | _ => pure ()
   return worlds
 
 def getCurrentColourPalette : MetaM (Array String) := do
