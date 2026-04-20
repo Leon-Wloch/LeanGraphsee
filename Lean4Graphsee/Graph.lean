@@ -36,6 +36,7 @@ def findAllRelations (lctx : LocalContext) : MetaM (Array RelationInfo) := do
 
 def findAllWorlds (lctx : LocalContext) (relations : Array RelationInfo) : MetaM (Std.HashSet String) := do
   let mut worlds : Std.HashSet String := {}
+  -- TODO: ineffecient looping: we are looping over lctx for each relation.
   for info in relations do
   -- TODO: this for-loop is very similar to the one from extracEdgesFromRelation.
   -- Possibly extract all instances of relations first and pass them to both functions?
