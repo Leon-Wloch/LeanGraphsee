@@ -20,6 +20,8 @@ example (w1 w2 w3 : W)
   (h3 : R w1 w3) : True := by
   trivial
 
+set_option Kripke.edgeColours "vibrant"
+
 -- Simple example
 example (w1 w2 w3 : W)
   (R : W → W → Prop)
@@ -52,4 +54,28 @@ theorem otherExample
   (h3 : R (n 2) (n 25))
   : True := by
 
+  sorry
+
+theorem otherExample2
+  (W : Type)
+  (n : Nat → W)
+  (R : W → W → Prop)
+  (h1 : R (n 1) (n 2))
+  (h2 : R (n 2) (n 25))
+  (h3 : R (n 1) (n (5*5)))
+  : False := by
+  simp at *
+  -- show_graph
+  sorry
+
+-- Example with agents
+theorem agentsExample
+  (W Agent : Type)
+  (w v u : W)
+  (R : Agent → W → W → Prop)
+  (a b : Agent)
+  (h1 : R a v w)
+  (h2 : R b w u)
+  : False := by
+  -- show_graph
   sorry
