@@ -8,11 +8,11 @@ public meta section
 
 open Lean Meta ProofWidgets Jsx
 
--- Stores the relation's expression, corresponding world type, and user-friendly name.
-structure RelationInfo where
-  relation : Expr
-  worldType : Expr
-  name : String
+structure relationInstance where
+  relationName : String
+  source : String
+  target : String
+  colour : String
   deriving Inhabited
 
 -- Check if an expression is of the form T → T → Prop.
@@ -25,54 +25,47 @@ def isRelationType (e : Expr) : MetaM (Option Expr) := do
       return none
   | _ => return none
 
-def findAllRelations (lctx : LocalContext) : MetaM (Array RelationInfo) := do
-  let mut relations : Array RelationInfo := #[]
-  for decl in lctx do
-    if let some t ← isRelationType decl.type then
-      relations := relations.push {
-        relation := mkFVar decl.fvarId
-        worldType := t
-        name := decl.userName.toString
-      }
-  return relations
-
-def findAllWorlds (lctx : LocalContext) (relations : Array RelationInfo) : MetaM (Std.HashSet String) := do
-  let mut worlds : Std.HashSet String := {}
-  -- TODO: ineffecient looping: we are looping over lctx for each relation.
-  for info in relations do
-  -- TODO: this for-loop is very similar to the one from extracEdgesFromRelation.
-  -- Possibly extract all instances of relations first and pass them to both functions?
-    for decl in lctx do
-      match decl.type with
-      | .app (.app r w1) w2 =>
-        if ← isDefEq r info.relation then
-          let w1Type ← inferType w1
-          let w2Type ← inferType w2
-          if (← isDefEq w1Type info.worldType) && (← isDefEq w2Type info.worldType) then
-            let w1str := toString (← ppExpr w1)
-            let w2str := toString (← ppExpr w2)
-            worlds := worlds.insert w1str
-            worlds := worlds.insert w2str
-      | _ => pure ()
-  return worlds
-
+-- Helper function defined in Lean4Graphsee.Colours to fetch edge colour palette
 def getCurrentColourPalette : MetaM (Array String) := do
   let options ← getOptions
   let paletteName := options.get `Kripke.edgeColours "default"
   return getPalette paletteName
 
-def extractEdgesFromRelation (lctx : LocalContext) (info : RelationInfo) (colour : String) : MetaM (Array (String × String × String × String)) := do
-  let mut edges : Array (String × String × String × String) := #[]
+def findRelationsAndWorlds (lctx : LocalContext) : MetaM (Std.HashSet String × Array relationInstance) := do
+  let mut worlds : Std.HashSet String := {}
+  let mut relationInstances := #[]
+  -- Hashmap for colouring identical relations the same colour
+  let mut relationColours : Std.HashMap String String := {}
+  let mut nextColourIdx : Nat := 0
+  let edgeColourPalette ← getCurrentColourPalette
+
   for decl in lctx do
     match decl.type with
     | .app (.app r w1) w2 =>
-      if ← isDefEq r info.relation then
+      if let some _ ← isRelationType (← inferType r) then
+        let relationName := toString (← ppExpr r)
+
+        let colour ← match relationColours.get? relationName with
+          | some col => pure col
+          | none =>
+            let col := edgeColourPalette[nextColourIdx % edgeColourPalette.size]!
+            relationColours := relationColours.insert relationName col
+            nextColourIdx := nextColourIdx + 1
+            pure col
+
         let w1str := toString (← ppExpr w1)
         let w2str := toString (← ppExpr w2)
-        let relationName := info.name
-        edges := edges.push (w1str, w2str, colour, relationName)
+
+        relationInstances := relationInstances.push {
+          relationName := relationName
+          source := w1str
+          target := w2str
+          colour := colour
+        }
+        worlds := worlds.insert w1str
+        worlds := worlds.insert w2str
     | _ => pure ()
-  return edges
+  return (worlds, relationInstances)
 
 def createGraphDisplayVertices (worlds : Std.HashSet String) : Array GraphDisplay.Vertex :=
   worlds.toArray.map (fun worldName => {
@@ -96,48 +89,35 @@ def createGraphDisplayVertices (worlds : Std.HashSet String) : Array GraphDispla
     boundingShape := .circle 6
   })
 
-def createGraphDisplayEdges (edges : Array (String × String × String × String)) : Array GraphDisplay.Edge :=
-  edges.map (fun (src, tgt, col, name) => {
-    source := src,
-    target := tgt,
+def createGraphDisplayEdges (edges : Array relationInstance) : Array GraphDisplay.Edge :=
+  edges.map (fun relInst => {
+    source := relInst.source,
+    target := relInst.target,
     label? := <text
       fontSize="10"
       fill="#FFF"
       textAnchor="middle"
       dy="-4"
     >
-    {Html.text name}
+    {Html.text relInst.relationName}
     </text>,
     attrs := #[
-      ("stroke", col)
+      ("stroke", relInst.colour)
     ]
   }
   )
 
 -- Build the Kripke frame graph from the local context.
 def drawKripkeGraph (lctx : LocalContext) : MetaM Html := do
-  let relations ← findAllRelations lctx
+  -- Find all worlds and relation instances
+  let (worlds, relations) ← findRelationsAndWorlds lctx
 
   if relations.isEmpty then
     return <span>No relation of the form R: T → T → Prop found.</span>
 
-  -- Use the relations to find all worlds.
-  let worlds ←  findAllWorlds lctx relations
-
-  -- Find the current edge colours palette
-  let currentEdgePalette ← getCurrentColourPalette
-
-  -- Find all the edges by extracting edges from each relation type one by one.
-  let mut allEdges : Array (String × String × String × String) := #[]
-  for i in [:relations.size] do
-    let info := relations[i]!
-    let colour := currentEdgePalette[i % currentEdgePalette.size]!
-    let edges ← extractEdgesFromRelation lctx info colour
-    allEdges := allEdges ++ edges
-
   -- Creating GraphDisplay vertices and edges from words and relations.
   let vertices : Array GraphDisplay.Vertex := createGraphDisplayVertices worlds
-  let edges : Array GraphDisplay.Edge := createGraphDisplayEdges allEdges
+  let edges : Array GraphDisplay.Edge := createGraphDisplayEdges relations
 
   -- Making edges longer and adjusting forces accordingly
   let forces : Array GraphDisplay.ForceParams := #[
