@@ -75,18 +75,39 @@ def extractEdgesFromRelation (lctx : LocalContext) (info : RelationInfo) (colour
   return edges
 
 def createGraphDisplayVertices (worlds : Std.HashSet String) : Array GraphDisplay.Vertex :=
-  worlds.toArray.map ({id := ·})
+  worlds.toArray.map (fun worldName => {
+    id := worldName
+    label := <g>
+      <circle
+      r="6"
+      fill="var(--vscode-editor-background)"
+      stroke="var(--vscode-editor-foreground)"
+      strokeWidth="1.5"/>
+      <text
+        fontSize="10"
+        fill="var(--vscode-editor-foreground)"
+        textAnchor="start"
+        x="10"
+        dy="0.3em"
+        fontFamily="monospace">
+      {Html.text worldName}
+      </text>
+    </g>
+    boundingShape := .circle 6
+  })
 
 def createGraphDisplayEdges (edges : Array (String × String × String × String)) : Array GraphDisplay.Edge :=
   edges.map (fun (src, tgt, col, name) => {
     source := src,
     target := tgt,
-    label? := some <text
+    label? := <text
       fontSize="10"
       fill="#FFF"
       textAnchor="middle"
       dy="-4"
-    >{Html.text name}</text>,
+    >
+    {Html.text name}
+    </text>,
     attrs := #[
       ("stroke", col)
     ]
