@@ -8,10 +8,11 @@ public meta section
 
 open Lean Meta ProofWidgets Jsx
 
--- Stores a relation and its corresponding world type.
+-- Stores the relation's expression, corresponding world type, and user-friendly name.
 structure RelationInfo where
   relation : Expr
   worldType : Expr
+  name : String
   deriving Inhabited
 
 -- Check if an expression is of the form T → T → Prop.
@@ -31,6 +32,7 @@ def findAllRelations (lctx : LocalContext) : MetaM (Array RelationInfo) := do
       relations := relations.push {
         relation := mkFVar decl.fvarId
         worldType := t
+        name := decl.userName.toString
       }
   return relations
 
@@ -59,28 +61,34 @@ def getCurrentColourPalette : MetaM (Array String) := do
   let paletteName := options.get `Kripke.edgeColours "default"
   return getPalette paletteName
 
-def extractEdgesFromRelation (lctx : LocalContext) (info : RelationInfo) (colour : String) : MetaM (Array (String × String × String)) := do
-  let mut edges : Array (String × String × String) := #[]
+def extractEdgesFromRelation (lctx : LocalContext) (info : RelationInfo) (colour : String) : MetaM (Array (String × String × String × String)) := do
+  let mut edges : Array (String × String × String × String) := #[]
   for decl in lctx do
     match decl.type with
     | .app (.app r w1) w2 =>
       if ← isDefEq r info.relation then
         let w1str := toString (← ppExpr w1)
         let w2str := toString (← ppExpr w2)
-        edges := edges.push (w1str, w2str, colour)
+        let relationName := info.name
+        edges := edges.push (w1str, w2str, colour, relationName)
     | _ => pure ()
   return edges
 
 def createGraphDisplayVertices (worlds : Std.HashSet String) : Array GraphDisplay.Vertex :=
   worlds.toArray.map ({id := ·})
 
-def createGraphDisplayEdges (edges : Array (String × String × String)) : Array GraphDisplay.Edge :=
-  edges.map (fun (src, tgt, col) => {
+def createGraphDisplayEdges (edges : Array (String × String × String × String)) : Array GraphDisplay.Edge :=
+  edges.map (fun (src, tgt, col, name) => {
     source := src,
     target := tgt,
+    label? := some <text
+      fontSize="10"
+      fill="#FFF"
+      textAnchor="middle"
+      dy="-4"
+    >{Html.text name}</text>,
     attrs := #[
-      ("stroke", col),
-      ("fill", col)
+      ("stroke", col)
     ]
   }
   )
@@ -99,7 +107,7 @@ def drawKripkeGraph (lctx : LocalContext) : MetaM Html := do
   let currentEdgePalette ← getCurrentColourPalette
 
   -- Find all the edges by extracting edges from each relation type one by one.
-  let mut allEdges : Array (String × String × String) := #[]
+  let mut allEdges : Array (String × String × String × String) := #[]
   for i in [:relations.size] do
     let info := relations[i]!
     let colour := currentEdgePalette[i % currentEdgePalette.size]!
