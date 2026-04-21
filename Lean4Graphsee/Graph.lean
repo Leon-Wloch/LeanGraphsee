@@ -139,8 +139,27 @@ def drawKripkeGraph (lctx : LocalContext) : MetaM Html := do
   let vertices : Array GraphDisplay.Vertex := createGraphDisplayVertices worlds
   let edges : Array GraphDisplay.Edge := createGraphDisplayEdges allEdges
 
+  -- Making edges longer and adjusting forces accordingly
+  let forces : Array GraphDisplay.ForceParams := #[
+    .link {
+      distance? := some 125,
+      strength? := some 0.1,
+      iterations? := some 1
+    },
+    .manyBody {
+      strength? := some (-100)
+    },
+    .x {
+      strength? := some 0.01
+    },
+    .y {
+      strength? := some 0.01
+    }
+  ]
+
   return <GraphDisplay
     vertices={vertices}
     edges={edges}
+    forces={forces}
     showDetails={false}
   />
