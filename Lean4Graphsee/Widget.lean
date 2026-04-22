@@ -20,7 +20,7 @@ def KripkeGraph.rpc (props : PanelWidgetProps) : RequestM (RequestTask Html) :=
     -- Check whether user set_option to display the graph
     let showGraph ← g.ctx.val.runMetaM {} do
       let options ← getOptions
-      return options.getBool `Kripke.showGraph
+      return options.getBool `Kripke.showGraph true
 
     if !showGraph then
       return <span></span>
