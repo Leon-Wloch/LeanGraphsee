@@ -17,16 +17,17 @@ structure OptionsConfig where
   vertexRadius : Nat
   vertexFontSize : Nat
 
+-- Fetch the options config set by the user. The default options are defined here.
 def getOptionsConfig : MetaM OptionsConfig := do
   let options ← getOptions
   let paletteName := options.get `Kripke.edgeColours "default"
   return {
-    showGraph := options.getBool `Kripke.showGraph
+    showGraph := options.getBool `Kripke.showGraph true
     edgeColours := getPalette (paletteName)
     edgeLength := options.get `Kripke.edgeLength 125
     edgeThickness := options.get `Kripke.edgeThickness 2
     edgeFontSize := options.get `Kripke.edgeFontSize 10
-    vertexRadius := options.get `Kripke.vertexRadius 6
+    vertexRadius := options.get `Kripke.vertexRadius 12
     vertexFontSize := options.get `Kripke.vertexFontSize 10
   }
 
@@ -96,6 +97,9 @@ def createGraphDisplayVertices (worlds : Std.HashSet String) (optionsConfig : Op
       <text
         fontSize={toString optionsConfig.vertexFontSize}
         fill="var(--vscode-editor-foreground)"
+        stroke="var(--vscode-editor-background)"
+        strokeWidth="2"
+        paintOrder="stroke"
         textAnchor="start"
         x={toString (optionsConfig.vertexRadius)}
         dy={toString (-(optionsConfig.vertexRadius / 2).toInt64)}
@@ -112,7 +116,10 @@ def createGraphDisplayEdges (edges : Array relationInstance) (optionsConfig : Op
     target := relInst.target,
     label? := <text
       fontSize={toString optionsConfig.edgeFontSize}
-      fill="#FFF"
+      fill={relInst.colour}
+      stroke="var(--vscode-editor-background)"
+      strokeWidth="2"
+      paintOrder="stroke"
       textAnchor="middle"
       dy="-4"
     >
@@ -120,7 +127,7 @@ def createGraphDisplayEdges (edges : Array relationInstance) (optionsConfig : Op
     </text>,
     attrs := #[
       ("stroke", relInst.colour),
-      ("stroke-width", toString optionsConfig.edgeThickness)
+      ("stroke-width", toString optionsConfig.edgeThickness),
     ]
   }
   )
@@ -147,7 +154,7 @@ def drawKripkeGraph (lctx : LocalContext) : MetaM Html := do
       iterations? := some 1
     },
     .manyBody {
-      strength? := some (-100)
+      strength? := some (-10)
     },
     .x {
       strength? := some 0.01
