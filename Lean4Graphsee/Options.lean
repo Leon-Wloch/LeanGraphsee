@@ -4,7 +4,7 @@ import Lean
 public import Lean.Data.Options
 
 register_option Kripke.showGraph : Bool := {
-  defValue := false
+  defValue := true
   descr := "Enable the Graph Display"
 }
 
@@ -29,7 +29,7 @@ register_option Kripke.edgeFontSize : Nat := {
 }
 
 register_option Kripke.vertexRadius : Nat := {
-  defValue := 6
+  defValue := 12
   descr := "Radius of vertex circles in pixels"
 }
 
