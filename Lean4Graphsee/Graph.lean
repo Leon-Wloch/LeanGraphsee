@@ -8,8 +8,7 @@ public meta section
 
 open Lean Meta ProofWidgets Jsx
 
-structure OptionsConfig where
-  showGraph : Bool
+structure GraphOptionsConfig where
   edgeColours : Array String
   edgeLength : Nat
   edgeThickness : Nat
@@ -17,12 +16,11 @@ structure OptionsConfig where
   vertexRadius : Nat
   vertexFontSize : Nat
 
--- Fetch the options config set by the user. The default options are defined here.
-def getOptionsConfig : MetaM OptionsConfig := do
+-- Fetch the graph options config set by the user. The default options are defined here.
+def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
   let options ← getOptions
   let paletteName := options.get `Kripke.edgeColours "default"
   return {
-    showGraph := options.getBool `Kripke.showGraph true
     edgeColours := getPalette (paletteName)
     edgeLength := options.get `Kripke.edgeLength 125
     edgeThickness := options.get `Kripke.edgeThickness 2
@@ -49,13 +47,13 @@ def isRelationType (e : Expr) : MetaM (Option Expr) := do
   | _ => return none
 
 
-def findRelationsAndWorlds (lctx : LocalContext) (optionsConfig: OptionsConfig) : MetaM (Std.HashSet String × Array relationInstance) := do
+def findRelationsAndWorlds (lctx : LocalContext) (graphOptionsConfig: GraphOptionsConfig) : MetaM (Std.HashSet String × Array relationInstance) := do
   let mut worlds : Std.HashSet String := {}
   let mut relationInstances := #[]
   -- Hashmap for colouring identical relations the same colour
   let mut relationColours : Std.HashMap String String := {}
   let mut nextColourIdx : Nat := 0
-  let edgeColourPalette := optionsConfig.edgeColours
+  let edgeColourPalette := graphOptionsConfig.edgeColours
 
   for decl in lctx do
     match decl.type with
@@ -85,37 +83,37 @@ def findRelationsAndWorlds (lctx : LocalContext) (optionsConfig: OptionsConfig) 
     | _ => pure ()
   return (worlds, relationInstances)
 
-def createGraphDisplayVertices (worlds : Std.HashSet String) (optionsConfig : OptionsConfig): Array GraphDisplay.Vertex :=
+def createGraphDisplayVertices (worlds : Std.HashSet String) (graphOptionsConfig : GraphOptionsConfig): Array GraphDisplay.Vertex :=
   worlds.toArray.map (fun worldName => {
     id := worldName
     label := <g>
       <circle
-      r={toString optionsConfig.vertexRadius}
+      r={toString graphOptionsConfig.vertexRadius}
       fill="var(--vscode-editor-background)"
       stroke="var(--vscode-editor-foreground)"
       strokeWidth="1.5"/>
       <text
-        fontSize={toString optionsConfig.vertexFontSize}
+        fontSize={toString graphOptionsConfig.vertexFontSize}
         fill="var(--vscode-editor-foreground)"
         stroke="var(--vscode-editor-background)"
         strokeWidth="2"
         paintOrder="stroke"
         textAnchor="start"
-        x={toString (optionsConfig.vertexRadius)}
-        dy={toString (-(optionsConfig.vertexRadius / 2).toInt64)}
+        x={toString (graphOptionsConfig.vertexRadius)}
+        dy={toString (-(graphOptionsConfig.vertexRadius / 2).toInt64)}
         fontFamily="monospace">
       {Html.text worldName}
       </text>
     </g>
-    boundingShape := .circle optionsConfig.vertexRadius.toFloat
+    boundingShape := .circle graphOptionsConfig.vertexRadius.toFloat
   })
 
-def createGraphDisplayEdges (edges : Array relationInstance) (optionsConfig : OptionsConfig): Array GraphDisplay.Edge :=
+def createGraphDisplayEdges (edges : Array relationInstance) (graphOptionsConfig : GraphOptionsConfig): Array GraphDisplay.Edge :=
   edges.map (fun relInst => {
     source := relInst.source,
     target := relInst.target,
     label? := <text
-      fontSize={toString optionsConfig.edgeFontSize}
+      fontSize={toString graphOptionsConfig.edgeFontSize}
       fill={relInst.colour}
       stroke="var(--vscode-editor-background)"
       strokeWidth="2"
@@ -127,29 +125,29 @@ def createGraphDisplayEdges (edges : Array relationInstance) (optionsConfig : Op
     </text>,
     attrs := #[
       ("stroke", relInst.colour),
-      ("stroke-width", toString optionsConfig.edgeThickness),
+      ("stroke-width", toString graphOptionsConfig.edgeThickness),
     ]
   }
   )
 
 -- Build the Kripke frame graph from the local context.
 def drawKripkeGraph (lctx : LocalContext) : MetaM Html := do
-  let optionsConfig ← getOptionsConfig
+  let graphOptionsConfig ← getGraphOptionsConfig
 
   -- Find all worlds and relation instances
-  let (worlds, relations) ← findRelationsAndWorlds lctx optionsConfig
+  let (worlds, relations) ← findRelationsAndWorlds lctx graphOptionsConfig
 
   if relations.isEmpty then
     return <span>No relation of the form R : T → T → Prop found.</span>
 
   -- Creating GraphDisplay vertices and edges from words and relations.
-  let vertices : Array GraphDisplay.Vertex := createGraphDisplayVertices worlds optionsConfig
-  let edges : Array GraphDisplay.Edge := createGraphDisplayEdges relations optionsConfig
+  let vertices : Array GraphDisplay.Vertex := createGraphDisplayVertices worlds graphOptionsConfig
+  let edges : Array GraphDisplay.Edge := createGraphDisplayEdges relations graphOptionsConfig
 
   -- Making edges longer and adjusting forces accordingly
   let forces : Array GraphDisplay.ForceParams := #[
     .link {
-      distance? := some optionsConfig.edgeLength.toFloat,
+      distance? := some graphOptionsConfig.edgeLength.toFloat,
       strength? := some 0.1,
       iterations? := some 1
     },
