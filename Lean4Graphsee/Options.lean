@@ -24,7 +24,7 @@ register_option Kripke.edgeThickness : Nat := {
 }
 
 register_option Kripke.edgeFontSize : Nat := {
-  defValue := 10
+  defValue := 11
   descr := "Font size for edge labels in pixels"
 }
 
@@ -34,6 +34,6 @@ register_option Kripke.vertexRadius : Nat := {
 }
 
 register_option Kripke.vertexFontSize : Nat := {
-  defValue := 10
+  defValue := 11
   descr := "Font size for vertex labels in pixels"
 }
