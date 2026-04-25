@@ -38,12 +38,12 @@ def colourblindPalette : Array String := #[
 
 -- This palette was taken from https://www.schemecolor.com/stunning-bright-color-scheme.php
 def vibrantPalette : Array String := #[
-  "#66FF00",
-  "#1974D2",
-  "#08E8DE",
-  "#FFF000",
-  "#FFAA1D",
-  "#FF007F"
+  "#66FF00", -- Bright Lime
+  "#b000ff", --Bright Purple
+  "#08E8DE", -- Bright Cyan
+  "#FFF000", -- Bright Yellow
+  "#FFAA1D", -- Bright Orange
+  "#FF007F" -- Bright Pink
 ]
 
 def getPalette (paletteName : String) : Array String :=
