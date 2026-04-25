@@ -24,9 +24,9 @@ def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
     edgeColours := getPalette (paletteName)
     edgeLength := options.get `Kripke.edgeLength 125
     edgeThickness := options.get `Kripke.edgeThickness 2
-    edgeFontSize := options.get `Kripke.edgeFontSize 10
+    edgeFontSize := options.get `Kripke.edgeFontSize 11
     vertexRadius := options.get `Kripke.vertexRadius 12
-    vertexFontSize := options.get `Kripke.vertexFontSize 10
+    vertexFontSize := options.get `Kripke.vertexFontSize 11
   }
 
 structure relationInstance where
@@ -116,7 +116,7 @@ def createGraphDisplayEdges (edges : Array relationInstance) (graphOptionsConfig
       fontSize={toString graphOptionsConfig.edgeFontSize}
       fill={relInst.colour}
       stroke="var(--vscode-editor-background)"
-      strokeWidth="2"
+      strokeWidth="3.5"
       paintOrder="stroke"
       textAnchor="middle"
       dy="-4"
@@ -138,7 +138,10 @@ def drawKripkeGraph (lctx : LocalContext) : MetaM Html := do
   let (worlds, relations) ← findRelationsAndWorlds lctx graphOptionsConfig
 
   if relations.isEmpty then
-    return <span>No relation of the form R : T → T → Prop found.</span>
+    return <span>No instances of a relation of form R : T → T → Prop found.</span>
+
+  if worlds.isEmpty then
+    return <span>No instances of a relation of form R : T → T → Prop found.</span>
 
   -- Creating GraphDisplay vertices and edges from words and relations.
   let vertices : Array GraphDisplay.Vertex := createGraphDisplayVertices worlds graphOptionsConfig
