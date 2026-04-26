@@ -1,8 +1,8 @@
 module
 
 public meta import ProofWidgets.Component.GraphDisplay
-public meta import Lean4Graphsee.Options
-public meta import Lean4Graphsee.Colours
+public meta import Graphsee.Options
+public meta import Graphsee.Colours
 
 public meta section
 

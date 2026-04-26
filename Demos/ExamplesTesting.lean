@@ -1,8 +1,6 @@
-import Lean4Graphsee.Widget
+import Graphsee
 
 set_option linter.unusedVariables false
-
-set_option Kripke.showGraph true
 
 -- Simple example
 example (w1 w2 w3 : W)
@@ -25,6 +23,12 @@ set_option Kripke.edgeColours "vibrant"
 -- Simple example
 example (w1 w2 w3 : W)
   (R : W → W → Prop)
+   : True := by
+  trivial
+
+example (w1 w2 w3 : W)
+  (R : W → W → Prop)
+  (h : R a a2)
    : True := by
   trivial
 
@@ -56,6 +60,7 @@ theorem otherExample
 
   sorry
 
+-- Dynamic tactic example
 theorem otherExample2
   (W : Type)
   (n : Nat → W)
@@ -65,10 +70,9 @@ theorem otherExample2
   (h3 : R (n 1) (n (5*5)))
   : False := by
   simp at *
-  -- show_graph
   sorry
 
--- Example with agents
+-- Example with agents (currently doesn't work as R isn't in form T → T → Prop)
 theorem agentsExample
   (W Agent : Type)
   (w v u : W)
@@ -77,5 +81,4 @@ theorem agentsExample
   (h1 : R a v w)
   (h2 : R b w u)
   : False := by
-  -- show_graph
   sorry

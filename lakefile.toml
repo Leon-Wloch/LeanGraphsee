@@ -1,0 +1,13 @@
+name = "Lean4Graphsee"
+version = "0.1.0"
+
+[[require]]
+name = "proofwidgets"
+git = "https://github.com/leanprover-community/ProofWidgets4"
+rev = "v0.0.91"
+
+[[lean_lib]]
+name = "Lean4Graphsee"
+
+[[lean_lib]]
+name = "Graphsee"
