@@ -8,6 +8,12 @@ register_option Kripke.showGraph : Bool := {
   descr := "Enable the Graph Display"
 }
 
+register_option Kripke.showGoal : Bool := {
+  defValue := true
+  descr := "Enable visualisation of the goal in the form of a dashed arrow"
+
+}
+
 register_option Kripke.edgeColours : String := {
   defValue := "default"
   descr := "Colour palette for relation edges (options: default, grayscale, colourblind, vibrant)"

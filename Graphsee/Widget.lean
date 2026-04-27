@@ -29,7 +29,7 @@ def KripkeGraph.rpc (props : PanelWidgetProps) : RequestM (RequestTask Html) :=
       let md ← g.mvarId.getDecl
       let lctx := md.lctx |>.sanitizeNames.run' {options := (← getOptions)}
       Meta.withLCtx lctx md.localInstances do
-        drawKripkeGraph lctx
+        drawKripkeGraph lctx md.type
 
     return <details «open»={true}>
       <summary className="mv2 pointer">Graph Display</summary>

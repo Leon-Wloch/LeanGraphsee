@@ -9,6 +9,7 @@ public meta section
 open Lean Meta ProofWidgets Jsx
 
 structure GraphOptionsConfig where
+  showGoal : Bool
   edgeColours : Array String
   edgeLength : Nat
   edgeThickness : Nat
@@ -21,6 +22,7 @@ def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
   let options ← getOptions
   let paletteName := options.get `Kripke.edgeColours "default"
   return {
+    showGoal := options.getBool `Kripke.showGoal true
     edgeColours := getPalette (paletteName)
     edgeLength := options.get `Kripke.edgeLength 125
     edgeThickness := options.get `Kripke.edgeThickness 2
@@ -34,6 +36,7 @@ structure relationInstance where
   source : String
   target : String
   colour : String
+  isGoal : Bool := False
   deriving Inhabited
 
 -- Check if an expression is of the form T → T → Prop.
@@ -47,7 +50,7 @@ def isRelationType (e : Expr) : MetaM (Option Expr) := do
   | _ => return none
 
 
-def findRelationsAndWorlds (lctx : LocalContext) (graphOptionsConfig: GraphOptionsConfig) : MetaM (Std.HashSet String × Array relationInstance) := do
+def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptionsConfig: GraphOptionsConfig) : MetaM (Std.HashSet String × Array relationInstance) := do
   let mut worlds : Std.HashSet String := {}
   let mut relationInstances := #[]
   -- Hashmap for colouring identical relations the same colour
@@ -77,10 +80,37 @@ def findRelationsAndWorlds (lctx : LocalContext) (graphOptionsConfig: GraphOptio
           source := w1str
           target := w2str
           colour := colour
+          isGoal := False
         }
         worlds := worlds.insert w1str
         worlds := worlds.insert w2str
     | _ => pure ()
+
+  -- Next we check if the goal is in the form of a relation, and if it is,
+  -- we visualise it as a dashed arrow
+  if graphOptionsConfig.showGoal then
+    match goalType with
+    | .app (.app r w1) w2 =>
+      if let some _ ← isRelationType (← inferType r) then
+        let relationName := toString (← ppExpr r)
+        let colour ← match relationColours.get? relationName with
+          | some col => pure col
+          | none =>
+            let col := edgeColourPalette[nextColourIdx % edgeColourPalette.size]!
+            pure col
+        let w1str := toString (← ppExpr w1)
+        let w2str := toString (← ppExpr w2)
+        relationInstances := relationInstances.push {
+          relationName := relationName
+          source := w1str
+          target := w2str
+          colour := colour
+          isGoal := True
+        }
+        worlds := worlds.insert w1str
+        worlds := worlds.insert w2str
+    | _ => pure ()
+
   return (worlds, relationInstances)
 
 def createGraphDisplayVertices (worlds : Std.HashSet String) (graphOptionsConfig : GraphOptionsConfig): Array GraphDisplay.Vertex :=
@@ -126,16 +156,17 @@ def createGraphDisplayEdges (edges : Array relationInstance) (graphOptionsConfig
     attrs := #[
       ("stroke", relInst.colour),
       ("stroke-width", toString graphOptionsConfig.edgeThickness),
+      ("stroke-dasharray", if relInst.isGoal then "5,5" else "none")
     ]
   }
   )
 
 -- Build the Kripke frame graph from the local context.
-def drawKripkeGraph (lctx : LocalContext) : MetaM Html := do
+def drawKripkeGraph (lctx : LocalContext) (goalType : Expr) : MetaM Html := do
   let graphOptionsConfig ← getGraphOptionsConfig
 
   -- Find all worlds and relation instances
-  let (worlds, relations) ← findRelationsAndWorlds lctx graphOptionsConfig
+  let (worlds, relations) ← findRelationsAndWorlds lctx goalType graphOptionsConfig
 
   if relations.isEmpty then
     return <span>No instances of a relation of form R : T → T → Prop found.</span>
