@@ -146,7 +146,7 @@ def createGraphDisplayEdges (edges : Array relationInstance) (graphOptionsConfig
       fontSize={toString graphOptionsConfig.edgeFontSize}
       fill={relInst.colour}
       stroke="var(--vscode-editor-background)"
-      strokeWidth="3.5"
+      strokeWidth="5"
       paintOrder="stroke"
       textAnchor="middle"
       dy="-4"
