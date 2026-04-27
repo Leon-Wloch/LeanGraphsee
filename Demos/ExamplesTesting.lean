@@ -49,6 +49,15 @@ example (w1 w2 : W) (s1 s2 : S)
   (h2 : R2 s1 s2) : True := by
   trivial
 
+-- Example for visualising the goal using dashed arrow
+theorem goalExample
+  (W : Type) (v w u : W) (R : W → W → Prop)
+  (h1 : R v w)
+  (h2 : R w u)
+  : R v u := by
+  -- show a dashed line from v to u in this case?
+  sorry
+
 -- Example with function
 theorem otherExample
   (W : Type)
