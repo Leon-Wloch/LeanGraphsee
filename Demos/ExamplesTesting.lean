@@ -81,6 +81,19 @@ theorem otherExample2
   simp at *
   sorry
 
+-- Example for valuation function/atomic propositions
+theorem annotationExample
+  (W : Type) (v w u : W) (R : W → W → Prop)
+  (h1 : R v w)
+  (h2 : R v u)
+  (isNice : W → Prop)
+  (isNotNice : W → Prop)
+  (v_nice : isNice v)
+  (v_not_nice : isNotNice w)
+  : ∃ x, R v x ∧ isNice x := by
+  -- also show "isNice" inside node `v` in this case?
+  sorry
+
 -- Example with agents (currently doesn't work as R isn't in form T → T → Prop)
 theorem agentsExample
   (W Agent : Type)
