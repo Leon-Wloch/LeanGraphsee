@@ -232,19 +232,27 @@ def drawGraph (lctx : LocalContext) (goalType : Expr) : MetaM Html := do
 
   -- Making edges longer and adjusting forces accordingly
   let forces : Array GraphDisplay.ForceParams := #[
+    .center {
+      strength? := some 0
+    },
+    .collide {
+      radius? := some ((computeMaxVertexRadius worlds graphOptionsConfig).toFloat * 1.1)
+      strength? := some 0.1
+      iterations? := some 1
+    },
     .link {
       distance? := some graphOptionsConfig.edgeLength.toFloat,
       strength? := some 0.1,
       iterations? := some 1
     },
     .manyBody {
-      strength? := some (-10)
+      strength? := some 0
     },
     .x {
-      strength? := some 0.01
+      strength? := some 0
     },
     .y {
-      strength? := some 0.01
+      strength? := some 0
     }
   ]
 
