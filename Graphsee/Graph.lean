@@ -31,27 +31,39 @@ def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
     vertexFontSize := options.get `Graphsee.vertexFontSize 11
   }
 
+structure worldInstance where
+  worldName : String
+  atomicProps : List String
+  deriving Inhabited
+
 structure relationInstance where
   relationName : String
   source : String
   target : String
   colour : String
-  isGoal : Bool := False
+  isGoal : Bool
   deriving Inhabited
 
 -- Check if an expression is of the form T → T → Prop.
-def isRelationType (e : Expr) : MetaM (Option Expr) := do
+def isRelationType (e : Expr) : MetaM Bool := do
   match e with
   | .forallE _ t1 (.forallE _ t2 (.sort .zero) _) _ =>
     if ← isDefEq t1 t2 then
-      return some t1
+      return true
     else
-      return none
-  | _ => return none
+      return false
+  | _ => return false
+
+-- Check if an expression is of the form T → Prop.
+def isAtomicPropType (e : Expr) : MetaM Bool := do
+  match e with
+  | .forallE _ _ (.sort .zero) _ => return true
+  | _ => return false
 
 
-def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptionsConfig: GraphOptionsConfig) : MetaM (Std.HashSet String × Array relationInstance) := do
-  let mut worlds : Std.HashSet String := {}
+def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptionsConfig: GraphOptionsConfig) : MetaM (Array worldInstance × Array relationInstance) := do
+  -- We include the worldName alongside the worldInstance for quicker lookup
+  let mut worlds : Std.HashMap String worldInstance := {}
   let mut relationInstances := #[]
   -- Hashmap for colouring identical relations the same colour
   let mut relationColours : Std.HashMap String String := {}
@@ -61,7 +73,7 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
   for decl in lctx do
     match decl.type with
     | .app (.app r w1) w2 =>
-      if let some _ ← isRelationType (← inferType r) then
+      if ← isRelationType (← inferType r) then
         let relationName := toString (← ppExpr r)
 
         let colour ← match relationColours.get? relationName with
@@ -72,18 +84,29 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
             nextColourIdx := nextColourIdx + 1
             pure col
 
-        let w1str := toString (← ppExpr w1)
-        let w2str := toString (← ppExpr w2)
+        let w1Name := toString (← ppExpr w1)
+        let w2Name := toString (← ppExpr w2)
+
+        if !worlds.contains w1Name then
+          worlds := worlds.insert w1Name { worldName := w1Name, atomicProps := [] }
+        if !worlds.contains w2Name then
+          worlds := worlds.insert w2Name { worldName := w2Name, atomicProps := [] }
 
         relationInstances := relationInstances.push {
           relationName := relationName
-          source := w1str
-          target := w2str
+          source := w1Name
+          target := w2Name
           colour := colour
           isGoal := False
         }
-        worlds := worlds.insert w1str
-        worlds := worlds.insert w2str
+    | .app p w =>
+      let pType ← inferType p
+      if ← isAtomicPropType pType then
+        let propName := toString (← ppExpr p)
+        let worldName := toString (← ppExpr w)
+        let existing : worldInstance := worlds.getD worldName {worldName := worldName, atomicProps := []}
+        let updated := { existing with atomicProps := existing.atomicProps ++ [propName] }
+        worlds := worlds.insert worldName updated
     | _ => pure ()
 
   -- Next we check if the goal is in the form of a relation, and if it is,
@@ -91,37 +114,58 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
   if graphOptionsConfig.showGoal then
     match goalType with
     | .app (.app r w1) w2 =>
-      if let some _ ← isRelationType (← inferType r) then
+      if ← isRelationType (← inferType r) then
         let relationName := toString (← ppExpr r)
         let colour ← match relationColours.get? relationName with
           | some col => pure col
           | none =>
             let col := edgeColourPalette[nextColourIdx % edgeColourPalette.size]!
             pure col
-        let w1str := toString (← ppExpr w1)
-        let w2str := toString (← ppExpr w2)
+        let w1Name := toString (← ppExpr w1)
+        let w2Name := toString (← ppExpr w2)
         relationInstances := relationInstances.push {
           relationName := relationName
-          source := w1str
-          target := w2str
+          source := w1Name
+          target := w2Name
           colour := colour
           isGoal := True
         }
-        worlds := worlds.insert w1str
-        worlds := worlds.insert w2str
+        if !worlds.contains w1Name then
+          worlds := worlds.insert w1Name { worldName := w1Name, atomicProps := [] }
+        if !worlds.contains w2Name then
+          worlds := worlds.insert w2Name { worldName := w2Name, atomicProps := [] }
     | _ => pure ()
+  let worldInstances := worlds.toArray.map (·.2)
+  return (worldInstances, relationInstances)
 
-  return (worlds, relationInstances)
+-- Finds the maximum circle radius needed to fit the atomic propositions of the world with
+-- the most atomic propositions that take up the most space
+def computeMaxVertexRadius (worlds : Array worldInstance) (graphOptionsConfig : GraphOptionsConfig) : Nat :=
+  worlds.foldl
+    (fun acc worldInstance =>
+      let propsText := String.intercalate ", " worldInstance.atomicProps
+       -- Approximate text width using monospace character width (0.6 * fontSize per character)
+      let charsWidth := propsText.length * graphOptionsConfig.vertexFontSize * 6 / 10
+      let r := if worldInstance.atomicProps.isEmpty
+        then graphOptionsConfig.vertexRadius
+        -- Radius must be at least half the text width (since text is centered), with padding
+        else Nat.max graphOptionsConfig.vertexRadius (charsWidth / 2 + 4)
+      Nat.max acc r)
+    -- Start with the default vertex radius as floor
+    graphOptionsConfig.vertexRadius
 
-def createGraphDisplayVertices (worlds : Std.HashSet String) (graphOptionsConfig : GraphOptionsConfig): Array GraphDisplay.Vertex :=
-  worlds.toArray.map (fun worldName => {
-    id := worldName
+def createGraphDisplayVertices (worlds : Array worldInstance) (graphOptionsConfig : GraphOptionsConfig): Array GraphDisplay.Vertex :=
+  let vertexRadius := computeMaxVertexRadius worlds graphOptionsConfig
+  worlds.map (fun worldInstance =>
+    let propsText := String.intercalate ", " worldInstance.atomicProps
+    {
+    id := worldInstance.worldName
     label := <g>
       <circle
-      r={toString graphOptionsConfig.vertexRadius}
-      fill="var(--vscode-editor-background)"
-      stroke="var(--vscode-editor-foreground)"
-      strokeWidth="1.5"/>
+        r={toString vertexRadius}
+        fill="var(--vscode-editor-background)"
+        stroke="var(--vscode-editor-foreground)"
+        strokeWidth="1.5"/>
       <text
         fontSize={toString graphOptionsConfig.vertexFontSize}
         fill="var(--vscode-editor-foreground)"
@@ -129,13 +173,24 @@ def createGraphDisplayVertices (worlds : Std.HashSet String) (graphOptionsConfig
         strokeWidth="2"
         paintOrder="stroke"
         textAnchor="start"
-        x={toString (graphOptionsConfig.vertexRadius)}
-        dy={toString (-(graphOptionsConfig.vertexRadius / 2).toInt64)}
+        x={toString (vertexRadius)}
+        dy={toString (-(vertexRadius.toInt64 / 2))}
         fontFamily="monospace">
-      {Html.text worldName}
+      {Html.text worldInstance.worldName}
+      </text>
+      <text
+        fontSize={toString graphOptionsConfig.vertexFontSize}
+        fill="var(--vscode-editor-foreground)"
+        stroke="var(--vscode-editor-background)"
+        strokeWidth="2"
+        paintOrder="stroke"
+        textAnchor="middle"
+        dy="4"
+        fontFamily="monospace">
+      {Html.text propsText}
       </text>
     </g>
-    boundingShape := .circle graphOptionsConfig.vertexRadius.toFloat
+    boundingShape := .circle vertexRadius.toFloat
   })
 
 def createGraphDisplayEdges (edges : Array relationInstance) (graphOptionsConfig : GraphOptionsConfig): Array GraphDisplay.Edge :=
@@ -169,9 +224,6 @@ def drawGraph (lctx : LocalContext) (goalType : Expr) : MetaM Html := do
   let (worlds, relations) ← findRelationsAndWorlds lctx goalType graphOptionsConfig
 
   if relations.isEmpty then
-    return <span>No instances of a relation of form R : T → T → Prop found.</span>
-
-  if worlds.isEmpty then
     return <span>No instances of a relation of form R : T → T → Prop found.</span>
 
   -- Creating GraphDisplay vertices and edges from words and relations.
