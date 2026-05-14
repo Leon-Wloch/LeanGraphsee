@@ -30,10 +30,10 @@ def grayscalePalette : Array String := #[
 def colourblindPalette : Array String := #[
   "#2271B2", -- Honolulu Blue
   "#F748A5", -- Barbie Pink
-  "359B73", -- Ocean Green
-  "D55E00", -- Bamboo
-  "3DB7E9", -- Summer Sky
-  "E69F00" -- Gamboge
+  "#359B73", -- Ocean Green
+  "#D55E00", -- Bamboo
+  "#3DB7E9", -- Summer Sky
+  "#E69F00" -- Gamboge
 ]
 
 -- This palette was taken from https://www.schemecolor.com/stunning-bright-color-scheme.php
