@@ -43,3 +43,8 @@ register_option Graphsee.vertexFontSize : Nat := {
   defValue := 11
   descr := "Font size for vertex labels in pixels"
 }
+
+register_option Graphsee.atomicPropsFontSize : Nat := {
+  defValue := 11
+  descr := "Font size for atomic propositions inside vertices"
+}

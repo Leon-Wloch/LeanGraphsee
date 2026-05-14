@@ -16,6 +16,7 @@ structure GraphOptionsConfig where
   edgeFontSize : Nat
   vertexRadius : Nat
   vertexFontSize : Nat
+  atomicPropsFontSize : Nat
 
 -- Fetch the graph options config set by the user. The default options are defined here.
 def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
@@ -29,6 +30,7 @@ def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
     edgeFontSize := options.get `Graphsee.edgeFontSize 11
     vertexRadius := options.get `Graphsee.vertexRadius 12
     vertexFontSize := options.get `Graphsee.vertexFontSize 11
+    atomicPropsFontSize := options.get `Graphsee.atomicPropsFontSize 11
   }
 
 structure worldInstance where
@@ -179,7 +181,7 @@ def createGraphDisplayVertices (worlds : Array worldInstance) (graphOptionsConfi
       {Html.text worldInstance.worldName}
       </text>
       <text
-        fontSize={toString graphOptionsConfig.vertexFontSize}
+        fontSize={toString graphOptionsConfig.atomicPropsFontSize}
         fill="var(--vscode-editor-foreground)"
         stroke="var(--vscode-editor-background)"
         strokeWidth="2"
