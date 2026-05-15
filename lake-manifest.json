@@ -5,7 +5,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "c9a963c3d86a1eebb2573e0cc4272913b33c95f5",
+   "rev": "ab8668d8de69a81a9e27faaab1ff2c753763e448",
    "name": "proofwidgets",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",
