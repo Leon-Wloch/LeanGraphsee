@@ -21,16 +21,16 @@ structure GraphOptionsConfig where
 -- Fetch the graph options config set by the user. The default options are defined here.
 def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
   let options ← getOptions
-  let paletteName := options.get `Graphsee.edgeColours "default"
+  let paletteName := options.get `graphsee.edgeColours "default"
   return {
-    showGoal := options.getBool `Graphsee.showGoal true
+    showGoal := options.getBool `graphsee.showGoal true
     edgeColours := getPalette (paletteName)
-    edgeLength := options.get `Graphsee.edgeLength 125
-    edgeThickness := options.get `Graphsee.edgeThickness 2
-    edgeFontSize := options.get `Graphsee.edgeFontSize 11
-    vertexRadius := options.get `Graphsee.vertexRadius 12
-    vertexFontSize := options.get `Graphsee.vertexFontSize 11
-    atomicPropsFontSize := options.get `Graphsee.atomicPropsFontSize 11
+    edgeLength := options.get `graphsee.edgeLength 125
+    edgeThickness := options.get `graphsee.edgeThickness 2
+    edgeFontSize := options.get `graphsee.edgeFontSize 11
+    vertexRadius := options.get `graphsee.vertexRadius 12
+    vertexFontSize := options.get `graphsee.vertexFontSize 11
+    atomicPropsFontSize := options.get `graphsee.atomicPropsFontSize 11
   }
 
 structure worldInstance where

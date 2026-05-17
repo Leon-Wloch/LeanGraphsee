@@ -19,7 +19,7 @@ def GraphseeWidget.rpc (props : PanelWidgetProps) : RequestM (RequestTask Html) 
     -- Check whether user set_option to display the graph
     let showGraph ← g.ctx.val.runMetaM {} do
       let options ← getOptions
-      return options.getBool `Graphsee.showGraph true
+      return options.getBool `graphsee.showGraph true
 
     if !showGraph then
       return <span></span>
