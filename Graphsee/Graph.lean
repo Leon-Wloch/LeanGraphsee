@@ -86,12 +86,12 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
           worlds := worlds.insert w2Name { worldName := w2Name, atomicProps := [] }
 
         let colour ← match relationColours.get? relationName with
-          | some col => pure col
-          | none =>
-            let col := edgeColourPalette[nextColourIdx % edgeColourPalette.size]!
-            relationColours := relationColours.insert relationName col
-            nextColourIdx := nextColourIdx + 1
-            pure col
+        | some col => pure col
+        | none =>
+          let col := edgeColourPalette[nextColourIdx % edgeColourPalette.size]!
+          relationColours := relationColours.insert relationName col
+          nextColourIdx := nextColourIdx + 1
+          pure col
 
         relationInstances := relationInstances.push {
           relationName := relationName
@@ -125,10 +125,10 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
           worlds := worlds.insert w2Name { worldName := w2Name, atomicProps := [] }
 
         let colour ← match relationColours.get? relationName with
-          | some col => pure col
-          | none =>
-            let col := edgeColourPalette[nextColourIdx % edgeColourPalette.size]!
-            pure col
+        | some col => pure col
+        | none =>
+          let col := edgeColourPalette[nextColourIdx % edgeColourPalette.size]!
+          pure col
 
         relationInstances := relationInstances.push {
           relationName := relationName
