@@ -66,11 +66,11 @@ def isAtomicPropType (e : Expr) : MetaM Bool := do
 def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptionsConfig: GraphOptionsConfig) : MetaM (Array worldInstance × Array relationInstance) := do
   -- We include the worldName alongside the worldInstance for quicker lookup
   let mut worlds : Std.HashMap String worldInstance := {}
-  let mut relationInstances := #[]
+  let mut relationInstances : Array relationInstance:= #[]
   -- Hashmap for colouring identical relations the same colour
   let mut relationColours : Std.HashMap String String := {}
   let mut nextColourIdx : Nat := 0
-  let edgeColourPalette := graphOptionsConfig.edgeColours
+  let edgeColourPalette : Array String := graphOptionsConfig.edgeColours
 
   for decl in lctx do
     match decl.type with
