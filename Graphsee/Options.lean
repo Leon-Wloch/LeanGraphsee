@@ -11,7 +11,11 @@ register_option graphsee.showGraph : Bool := {
 register_option graphsee.showGoal : Bool := {
   defValue := true
   descr := "Enable visualisation of the goal in the form of a dashed arrow"
+}
 
+register_option graphsee.showHeteroRelations : Bool := {
+  defValue := false
+  descr := "Enable visualisation of heterogenous binary relations"
 }
 
 register_option graphsee.edgeColours : String := {

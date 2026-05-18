@@ -10,6 +10,7 @@ open Lean Meta ProofWidgets Jsx
 
 structure GraphOptionsConfig where
   showGoal : Bool
+  showHeteroRelations : Bool
   edgeColours : Array String
   edgeLength : Nat
   edgeThickness : Nat
@@ -24,6 +25,7 @@ def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
   let paletteName := options.get `graphsee.edgeColours "default"
   return {
     showGoal := options.getBool `graphsee.showGoal true
+    showHeteroRelations := options.getBool `graphsee.showHeteroRelations false
     edgeColours := getPalette (paletteName)
     edgeLength := options.get `graphsee.edgeLength 125
     edgeThickness := options.get `graphsee.edgeThickness 2
@@ -36,7 +38,6 @@ def getGraphOptionsConfig : MetaM GraphOptionsConfig := do
 structure worldInstance where
   worldName : String
   atomicProps : List String
-  deriving Inhabited
 
 structure relationInstance where
   relationName : String
@@ -44,16 +45,15 @@ structure relationInstance where
   target : String
   colour : String
   isGoal : Bool
-  deriving Inhabited
 
 -- Check if an expression is of the form T → T → Prop.
-def isRelationType (e : Expr) : MetaM Bool := do
+def isRelationType (e : Expr) (graphOptionsConfig: GraphOptionsConfig) : MetaM Bool := do
   match e with
   | .forallE _ t1 (.forallE _ t2 (.sort .zero) _) _ =>
-    if ← isDefEq t1 t2 then
-      return true
+    if graphOptionsConfig.showHeteroRelations then
+      return True
     else
-      return false
+      return ← isDefEq t1 t2
   | _ => return false
 
 -- Check if an expression is of the form T → Prop.
@@ -75,7 +75,7 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
   for decl in lctx do
     match decl.type with
     | .app (.app r w1) w2 =>
-      if ← isRelationType (← inferType r) then
+      if ← isRelationType (← inferType r) graphOptionsConfig then
         let relationName := toString (← ppExpr r)
 
         let colour ← match relationColours.get? relationName with
@@ -116,7 +116,7 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
   if graphOptionsConfig.showGoal then
     match goalType with
     | .app (.app r w1) w2 =>
-      if ← isRelationType (← inferType r) then
+      if ← isRelationType (← inferType r) graphOptionsConfig then
         let relationName := toString (← ppExpr r)
         let colour ← match relationColours.get? relationName with
           | some col => pure col
