@@ -51,7 +51,7 @@ def isRelationType (e : Expr) (graphOptionsConfig: GraphOptionsConfig) : MetaM B
   match e with
   | .forallE _ t1 (.forallE _ t2 (.sort .zero) _) _ =>
     if graphOptionsConfig.showHeteroRelations then
-      return True
+      return true
     else
       return ← isDefEq t1 t2
   | _ => return false
