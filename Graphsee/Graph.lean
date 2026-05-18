@@ -77,6 +77,13 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
     | .app (.app r w1) w2 =>
       if ← isRelationType (← inferType r) graphOptionsConfig then
         let relationName := toString (← ppExpr r)
+        let w1Name := toString (← ppExpr w1)
+        let w2Name := toString (← ppExpr w2)
+
+        if !worlds.contains w1Name then
+          worlds := worlds.insert w1Name { worldName := w1Name, atomicProps := [] }
+        if !worlds.contains w2Name then
+          worlds := worlds.insert w2Name { worldName := w2Name, atomicProps := [] }
 
         let colour ← match relationColours.get? relationName with
           | some col => pure col
@@ -86,14 +93,6 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
             nextColourIdx := nextColourIdx + 1
             pure col
 
-        let w1Name := toString (← ppExpr w1)
-        let w2Name := toString (← ppExpr w2)
-
-        if !worlds.contains w1Name then
-          worlds := worlds.insert w1Name { worldName := w1Name, atomicProps := [] }
-        if !worlds.contains w2Name then
-          worlds := worlds.insert w2Name { worldName := w2Name, atomicProps := [] }
-
         relationInstances := relationInstances.push {
           relationName := relationName
           source := w1Name
@@ -102,8 +101,7 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
           isGoal := False
         }
     | .app p w =>
-      let pType ← inferType p
-      if ← isAtomicPropType pType then
+      if ← isAtomicPropType (← inferType p) then
         let propName := toString (← ppExpr p)
         let worldName := toString (← ppExpr w)
         let existing : worldInstance := worlds.getD worldName {worldName := worldName, atomicProps := []}
@@ -118,13 +116,20 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
     | .app (.app r w1) w2 =>
       if ← isRelationType (← inferType r) graphOptionsConfig then
         let relationName := toString (← ppExpr r)
+        let w1Name := toString (← ppExpr w1)
+        let w2Name := toString (← ppExpr w2)
+
+        if !worlds.contains w1Name then
+          worlds := worlds.insert w1Name { worldName := w1Name, atomicProps := [] }
+        if !worlds.contains w2Name then
+          worlds := worlds.insert w2Name { worldName := w2Name, atomicProps := [] }
+
         let colour ← match relationColours.get? relationName with
           | some col => pure col
           | none =>
             let col := edgeColourPalette[nextColourIdx % edgeColourPalette.size]!
             pure col
-        let w1Name := toString (← ppExpr w1)
-        let w2Name := toString (← ppExpr w2)
+
         relationInstances := relationInstances.push {
           relationName := relationName
           source := w1Name
@@ -132,10 +137,6 @@ def findRelationsAndWorlds (lctx : LocalContext) (goalType : Expr) (graphOptions
           colour := colour
           isGoal := True
         }
-        if !worlds.contains w1Name then
-          worlds := worlds.insert w1Name { worldName := w1Name, atomicProps := [] }
-        if !worlds.contains w2Name then
-          worlds := worlds.insert w2Name { worldName := w2Name, atomicProps := [] }
     | _ => pure ()
   let worldInstances := worlds.toArray.map (·.2)
   return (worldInstances, relationInstances)
